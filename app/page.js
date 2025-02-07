@@ -1,95 +1,123 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client"
+import { useEffect, useState } from "react";
+import { DOMAIN } from '../constants'
+import { last } from 'lodash-es'
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.js</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [seriesList, setSeriesList] = useState([]);
+  const [selectedSeries, setSelectedSeries] = useState({});
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    async function fetchData() {
+      const seriesDataResponse = await fetch(`${DOMAIN}/api/series/list`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const seriesDataResult = await seriesDataResponse.json();
+      setSeriesList(seriesDataResult?.result?.seriesList)
+      setSelectedSeries(seriesDataResult?.result?.seriesList[0])
+    }
+    fetchData();
+  }, [])
+
+  const onSeriesClick = (series) => {
+    setSelectedSeries(series)
+  }
+
+  return (
+    <div>
+      <main>
+        <div>
+          <ul>
+            {
+              seriesList.map(seriesListItem => {
+                return(
+                  <li key={seriesListItem._id}
+                    style={{"color": seriesListItem.seriesTitle === selectedSeries.seriesTitle ? '#cd3b3b': ''}}
+                  >
+                    <span onClick={() => onSeriesClick(seriesListItem)} style={{'cursor': 'pointer'}}>{seriesListItem.seriesTitle}</span>
+                  </li>
+                )
+              })
+            }
+          </ul>
+          <hr/ >
+          <table>
+              <thead>
+                <tr>
+                  <th>書名</th>
+                  <th>封面</th>
+                  <th>最近五筆價格</th>
+                  <th>今日價格</th>
+                  <th>歷史低價</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  selectedSeries?.seriesBookList?.map(seriesBookListItem => {
+                    return(
+                      <tr key={seriesBookListItem._id} style={{"background": seriesBookListItem.priceHistoryList.length > 1 && last(seriesBookListItem.priceHistoryList).price - last(seriesBookListItem.priceHistoryList).point <= seriesBookListItem?.historicalLowPrice?.price - seriesBookListItem?.historicalLowPrice?.point ? '#ffc174': ''}}>
+                        <td style={{'width': '150px'}}>{seriesBookListItem.bookTitle}</td>
+                        <td style={{'width': '100px'}}>
+                          <img style={{'width': '100%'}} src={seriesBookListItem.bookImage}/>
+                        </td>
+                        <td style={{'width': '400px'}}>
+                          <Line data={{
+                            labels: seriesBookListItem.priceHistoryList.map(item => new Date(item.createdAt).toISOString().split('T')[0]),
+                            datasets: [
+                              {
+                                label: 'Price',
+                                data: seriesBookListItem.priceHistoryList.map(item => item.price),
+                                borderColor: '#4280b5',
+                                borderWidth: 2,
+                                backgroundColor: '#4280b5',
+                                fill: false,
+                              },
+                              {
+                                label: 'Point',
+                                data: seriesBookListItem.priceHistoryList.map(item => item.point),
+                                borderColor: '#aab9c5',
+                                borderWidth: 2,
+                                backgroundColor: '#aab9c5',
+                                fill: false,
+                              },
+                              {
+                                label: 'Final price',
+                                data: seriesBookListItem.priceHistoryList.map(item => item.price - item.point),
+                                borderColor: '#b54242',
+                                borderWidth: 2,
+                                backgroundColor: '#b54242',
+                                fill: false
+                              },
+                            ]
+                          }}/>
+                        </td>
+                        <td>
+                          price: {last(seriesBookListItem.priceHistoryList).price}<br/>
+                          point: {last(seriesBookListItem.priceHistoryList).point}<br/>
+                          final price: {last(seriesBookListItem.priceHistoryList).price - last(seriesBookListItem.priceHistoryList).point}<br/><br/>
+                        </td>
+                        <td>
+                          price: {seriesBookListItem?.historicalLowPrice?.price}<br/>
+                          point: {seriesBookListItem?.historicalLowPrice?.point}<br/>
+                          final price: {seriesBookListItem?.historicalLowPrice?.price - seriesBookListItem?.historicalLowPrice?.point}<br/>
+                          date: {new Date(seriesBookListItem?.historicalLowPrice?.updatedAt).toISOString().split('T')[0]}
+                        </td>
+                      </tr>
+                    )
+                  })
+                }
+              </tbody>
+          </table>
+          
         </div>
       </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
