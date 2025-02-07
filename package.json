@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "prepare": "npx husky install && npx husky set .husky/pre-commit \"npx pretty-quick --staged\"",
+    "dev_prepare": "npx husky install && npx husky set .husky/pre-commit \"npx pretty-quick --staged\"",
     "format": "npx pretty-quick"
   },
   "dependencies": {
