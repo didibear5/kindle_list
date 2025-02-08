@@ -5,7 +5,7 @@ demo: https://kindle-list.vercel.app/
 
 ## Getting Started
 
-set the MongoDB key
+set the MongoDB Atlas key
 ```bash
 // .env.local
 MONGODB_URI={{DB_URI}}
