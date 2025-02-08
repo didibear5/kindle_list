@@ -34,6 +34,9 @@ export default function Home() {
     <div>
       <main>
         <div>
+          {
+            seriesList.length === 0 ? <div>waiting....</div> : ''
+          }
           <ul>
             {
               seriesList.map(seriesListItem => {
