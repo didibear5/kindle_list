@@ -1,7 +1,7 @@
-export const APP_ENV = process.env.APP_ENV
+export const NODE_ENV = process.env.NODE_ENV
 
 export const DOMAIN = {
-  dev: 'http://localhost:3000',
-  prod: 'https://kindle-list.vercel.app',
-}[APP_ENV]
+  development: 'http://localhost:3000',
+  production: 'https://kindle-list.vercel.app',
+}[NODE_ENV]
 
