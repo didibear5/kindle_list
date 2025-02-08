@@ -41,6 +41,11 @@ a {
   }
 } */
 
+li {
+  &:hover {
+    color: #cb9322;
+  }
+}
 
 td {
   padding: 8px;
