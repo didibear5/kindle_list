@@ -116,7 +116,7 @@ export default function Home() {
                           return(
                             <tr key={seriesBookListItem._id} style={{"background": seriesBookListItem?.priceHistoryList?.length > 1 && last(seriesBookListItem?.priceHistoryList)?.price - last(seriesBookListItem?.priceHistoryList)?.point <= seriesBookListItem?.historicalLowPrice?.price - seriesBookListItem?.historicalLowPrice?.point ? '#ffc174': ''}}>
                               <td style={{'width': '150px'}}>{seriesBookListItem?.bookTitle}</td>
-                              <td style={{'width': '100px'}}>
+                              <td style={{'minWidth': '100px'}}>
                                 <img style={{'width': '100%'}} src={seriesBookListItem?.bookImage}/>
                               </td>
                               <td style={{'width': '400px'}}>
