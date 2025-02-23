@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import { isEmpty, last } from 'lodash-es'
 import { DOMAIN } from '../../../constants'
+import products from '../daily-task/products'
 
 async function getSeriesList() {
   const seriesDataResponse = await fetch(`${DOMAIN}/api/series/list`, {
@@ -65,7 +66,7 @@ async function createSeries(seriesData, seriesPrice, _seriesBookList) {
       point: seriesPrice.point,
     }
   })
-   const priceHistoryResponse = await fetch(`/api/price-history/create`, {
+   const priceHistoryResponse = await fetch(`${DOMAIN}/api/price-history/create`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -184,36 +185,51 @@ async function updateSeries(existingSeries, seriesPrice, seriesBookList, _series
 
 export async function GET(request) {
   try {
-    const productUrls = [
-      'https://www.amazon.co.jp/dp/B074C559L8', // 迷宮飯
-      'https://www.amazon.co.jp/dp/B08DD7GH33', // 寶石之國
-      'https://www.amazon.co.jp/dp/B09BQLMCYD', // 來自深淵
-      'https://www.amazon.co.jp/dp/B07KJDMKW5', // 異獸魔都
-      'https://www.amazon.co.jp/dp/B096Y1KQGT', // 進擊的巨人
-      'https://www.amazon.co.jp/dp/B097PWSK4P', // 影宅
-    ];
     const errUrl = [];
 
     const seriesList = await getSeriesList();
 
     const browser = await puppeteer.launch();
 
-    for (const url of productUrls) {
+    for (const product of products) {
       const page = await browser.newPage();
-      await page.goto(url);
+      await page.goto(product?.url);
 
       try {
-        const seriesTitle = await page.$eval('#collection-masthead__title', el => el.textContent.trim());
-        const seriesPrice = await page.$eval('#hulk_buy_price_COMPLETE_SERIES_VOLUME_volume_3', 
-          el => parseInt(el.textContent.trim().replace(/[^0-9]/g, ''), 10));
-        const seriesPoint = await page.$eval(
-          '#hulk_buy_points_COMPLETE_SERIES_VOLUME_volume_3 span.a-text-bold', 
-          el => parseInt(el.textContent.trim().replace(/[^0-9]/g, ''), 10)
-        );
+        let seriesTotalNumber;
+        let seriesTitle;
+        let seriesPrice;
+        let seriesPoint;
 
-        const seriesTotalNumber = await page.$eval('#hulk_buy_bundle_button_COMPLETE_SERIES_VOLUME_volume_3-announce div span', 
-          el => parseInt(el.textContent.trim().replace(/[^0-9]/g, ''), 10));
-     
+        if (product?.type === 'comics') {
+          let index = 2;
+          const showAllButton = await page.$('li ::-p-text(すべてを表示)');
+          if (showAllButton) {
+            index = 3;
+          } 
+          seriesTotalNumber = await page.$eval(`#hulk_buy_bundle_button_COMPLETE_SERIES_VOLUME_volume_${index}-announce div span`, 
+            el => parseInt(el.textContent.trim().replace(/[^0-9]/g, ''), 10));
+
+          seriesTitle = await page.$eval('#collection-masthead__title', el => el.textContent.trim());
+          seriesPrice = await page.$eval(`#hulk_buy_price_COMPLETE_SERIES_VOLUME_volume_${index}`, 
+            el => parseInt(el.textContent.trim().replace(/[^0-9]/g, ''), 10));
+          seriesPoint = await page.$eval(
+            `#hulk_buy_points_COMPLETE_SERIES_VOLUME_volume_${index} span.a-text-bold`, 
+            el => parseInt(el.textContent.trim().replace(/[^0-9]/g, ''), 10)
+          );
+        } else if (product?.type === 'novel') {
+          seriesTotalNumber = await page.$eval('#hulk_buy_ownership_volume span', 
+            el => parseInt(el.textContent.trim().replace(/[^0-9]/g, ''), 10));
+
+          seriesTitle = await page.$eval('#collection-title', el => el.textContent.trim());
+          seriesPrice = await page.$eval('#hulk_buy_price_volume_0', 
+            el => parseInt(el.textContent.trim().replace(/[^0-9]/g, ''), 10));
+          seriesPoint = await page.$eval(
+            '#hulk_buy_points_volume_0 span.a-text-bold', 
+            el => parseInt(el.textContent.trim().replace(/[^0-9]/g, ''), 10)
+          );
+        }
+
         if (seriesTotalNumber > 10) {
           await page.type('#seriesAsinListGoToId', seriesTotalNumber.toString());
           await page.keyboard.press('Enter');
@@ -252,11 +268,11 @@ export async function GET(request) {
         await page.close(); // 關閉當前頁面
 
         // 檢查是否有建立過系列的資料
-        if (!seriesList.some(series => series.seriesUrl === url)) {
+        if (!seriesList.some(series => series.seriesUrl === product?.url)) {
           createSeries(
             {
               seriesTitle,
-              seriesUrl: url,
+              seriesUrl: product?.url,
               seriesBookList
             }, {
               price: seriesPrice,
@@ -265,7 +281,7 @@ export async function GET(request) {
             _seriesBookList
           );
         } else {
-          const existingSeries = seriesList.find(series => series.seriesUrl === url);
+          const existingSeries = seriesList.find(series => series.seriesUrl === product?.url);
           // seriesBookList.push({
           //   bookTitle: 'test222',
           //   bookImage: 'url',
@@ -286,8 +302,8 @@ export async function GET(request) {
         }
 
       } catch (error) {
-        console.error(`處理 URL ${url} 時發生錯誤:`, error);
-        errUrl.push(url)
+        console.error(`處理 URL ${product?.url} 時發生錯誤:`, error);
+        errUrl.push(product?.url)
         await page.close();
         continue; // 繼續處理下一個 URL
       }
