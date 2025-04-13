@@ -250,7 +250,7 @@ export async function GET(request) {
                 const price = await item.$eval('.a-color-price', 
                   el => parseInt(el.textContent.trim().replace(/[^0-9]/g, ''), 10));
                 const point = await item.$eval('.itemPoints', 
-                  el => parseInt(el.textContent.trim().replace(/[^0-9]/g, ''), 10));
+                  el => parseInt(el.textContent.trim().replace(/[^0-9]/g, ''), 10)).catch(() => 0);
 
                 seriesBookList.push({
                   bookTitle,
