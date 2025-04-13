@@ -80,7 +80,11 @@ export async function GET(request) {
       JSON.stringify({ message: "成功取得系列書籍列表", result: { seriesList }}),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=86400",
+          "Expires": new Date(Date.now() + 86400000).toUTCString()
+        },
       },
     );
   } catch (error) {
