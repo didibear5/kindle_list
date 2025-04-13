@@ -82,8 +82,7 @@ export async function GET(request) {
         status: 200,
         headers: { 
           "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=86400",
-          "Expires": new Date(Date.now() + 86400000).toUTCString()
+          "Cache-Control": "public, max-age=43200",
         },
       },
     );
